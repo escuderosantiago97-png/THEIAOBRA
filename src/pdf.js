@@ -310,23 +310,20 @@ export const buildOTPDF = async (data) => {
   doc.text('ORDEN DE TRABAJO', W / 2, y + 5.5, { align: 'center' })
   y += 8
 
-  // ── INFO SECTION ──
-  const logoW = 38, infoW = CW - logoW, fH = 7
-  const infoRows = 5, infoH = fH * infoRows
-  doc.setDrawColor(0); doc.setLineWidth(0.3)
-  doc.rect(M, y, logoW, infoH); doc.rect(M + logoW, y, infoW, infoH)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(0, 0, 0)
-  doc.text('THEIA', M + 5, y + 13)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5); doc.setTextColor(80, 80, 80)
-  doc.text('DISEÑO &', M + 5, y + 18); doc.text('CONSTRUCCIÓN', M + 5, y + 22)
+  // ── INFO SECTION (sin logo) ──
+  const fH = 7, infoRows = 5, infoH = fH * infoRows
+  const H2 = CW / 2  // mitad del ancho
+  doc.setDrawColor(0); doc.setLineWidth(0.3); doc.rect(M, y, CW, infoH)
+  // línea vertical central
+  doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.2); doc.line(M + H2, y, M + H2, y + infoH)
 
-  const fX = M + logoW + 3, fX2 = M + logoW + infoW / 2 + 3
-  const vX = M + logoW + 28, vX2 = M + logoW + infoW / 2 + 30
+  const fX = M + 3, fX2 = M + H2 + 3
+  const vX = M + 28,  vX2 = M + H2 + 28
   const row = (i) => y + i * fH
 
   const infoField = (label, value, x, vx, rowIdx) => {
     doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.2)
-    if (rowIdx > 0) doc.line(M + logoW, row(rowIdx), W - M, row(rowIdx))
+    if (rowIdx > 0) doc.line(M, row(rowIdx), W - M, row(rowIdx))
     doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(100, 100, 100)
     doc.text(label, x, row(rowIdx) + 3.5)
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(0, 0, 0)
@@ -335,14 +332,13 @@ export const buildOTPDF = async (data) => {
 
   infoField('FECHA DE INICIO', fD(data.fechaInicio || tod()), fX, vX, 0)
   infoField('INSTALADOR:', data.instalador, fX2, vX2, 0)
-  doc.setDrawColor(210, 210, 210); doc.line(M + logoW, row(1), W - M, row(1))
+  doc.setDrawColor(210, 210, 210); doc.line(M, row(1), W - M, row(1))
   doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(100, 100, 100); doc.text('UBICACIÓN:', fX, row(1) + 3.5)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0); doc.text(data.ubicacion || '-', vX, row(1) + 6, { maxWidth: infoW - 30 })
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0); doc.text(data.ubicacion || '-', vX, row(1) + 6, { maxWidth: H2 - 32 })
   infoField('BARRIO:', data.barrio, fX, vX, 2)
   infoField('LOTE N°:', data.lote, fX2, vX2, 2)
   infoField('ALTURA:', data.altura, fX, vX, 3)
-  // Checkboxes
-  doc.setDrawColor(210, 210, 210); doc.line(M + logoW, row(3), W - M, row(3))
+  doc.setDrawColor(210, 210, 210); doc.line(M, row(3), W - M, row(3))
   doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(100, 100, 100)
   doc.text('INTERIOR:', fX2, row(3) + 3.5)
   doc.setDrawColor(0); doc.setLineWidth(0.5); doc.rect(fX2 + 15, row(3) + 1, 4.5, 4.5)
@@ -511,11 +507,11 @@ export const buildICPDF = async ({ fecha, descripcion, motivo, solicitadoPor, in
 export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checklistItems, obsFinales, saldoAbonado, inst, sale }) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' }); const W = 210, M = 16, CW = W - M * 2
 
-  // Header
+  // Header — logo fondo blanco, letra negra
   doc.setDrawColor(0); doc.setLineWidth(1); doc.line(M, 14, W - M, 14)
-  doc.setFillColor(20, 20, 20); doc.rect(M, 17, 38, 14, 'F')
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255); doc.text('THEIA', M + 4, 26)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(200, 200, 200); doc.text('DISEÑO & CONSTRUCCIÓN', M + 4, 30)
+  doc.setDrawColor(0); doc.setLineWidth(0.5); doc.rect(M, 17, 38, 14)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0); doc.text('THEIA', M + 4, 26)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 80, 80); doc.text('DESIGN AND CO', M + 4, 30)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0); doc.text('CONFORME A OBRA', W - M, 24, { align: 'right' })
   doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 33, W - M, 33)
   let y = 38
@@ -539,33 +535,34 @@ export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checkli
   doc.text((inst?.address || '-').substring(0, 40), col2 + 3, y + 9)
   y += refH + 6
 
-  // Formal text — más grande
+  // Formal text — grande, nombre THEIA Design and Co
   const fechaD = fechaFin ? new Date(fechaFin + 'T12:00:00') : new Date()
   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
-  const texto = `Por medio de la presente, el/la cliente ${clienteNombre || inst?.client || '_____________'}, DNI ${clienteDni || '____________'}, presta su conformidad con los trabajos realizados a los ${fechaD.getDate()} días del mes de ${meses[fechaD.getMonth()]} del año ${fechaD.getFullYear()}, en el inmueble ubicado en ${inst?.address || '________________'}, llevados a cabo por THEIA Diseño & Construcción. Declara haber inspeccionado y verificado los trabajos, encontrándolos conformes a lo acordado.`
+  const dia = fechaD.getDate()
+  const texto = `Por medio de la presente, el/la cliente ${clienteNombre || inst?.client || '_____________'}, DNI ${clienteDni || '____________'}, presta su conformidad con los trabajos realizados a los ${dia} ${dia === 1 ? 'día' : 'días'} del mes de ${meses[fechaD.getMonth()]} del año ${fechaD.getFullYear()}, en el inmueble ubicado en ${inst?.address || '________________'}, llevados a cabo por THEIA Design and Co. Declara haber inspeccionado y verificado los trabajos, encontrándolos conformes a lo acordado.`
   const tLines = doc.splitTextToSize(texto, CW)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(20, 20, 20)
-  doc.text(tLines, M, y); y += tLines.length * 6.2 + 12
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(12); doc.setTextColor(20, 20, 20)
+  doc.text(tLines, M, y); y += tLines.length * 6.8 + 12
 
-  // Checklist — 4 ítems grandes
+  // Checklist — 4 ítems compactos
   const checkItems = [
     'MATERIAL EN OBRA',
     'COLOCACION Y TERMINACIONES',
     'LIMPIEZA EN OBRA',
     'CAMBIOS O ADICIONALES',
   ]
-  doc.setFillColor(30, 30, 30); doc.rect(M, y, CW, 8, 'F')
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255)
-  doc.text('VERIFICACIÓN DE TRABAJO REALIZADO', W / 2, y + 5.5, { align: 'center' }); y += 8
+  doc.setFillColor(30, 30, 30); doc.rect(M, y, CW, 7, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255)
+  doc.text('VERIFICACIÓN DE TRABAJO REALIZADO', W / 2, y + 4.8, { align: 'center' }); y += 7
 
   checkItems.forEach((label, idx) => {
-    const bg = idx % 2 === 0 ? 248 : 240
-    doc.setFillColor(bg, bg, bg); doc.rect(M, y, CW, 16, 'F')
-    doc.setDrawColor(0); doc.setLineWidth(0.8); doc.rect(M + 5, y + 3, 10, 10)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20, 20, 20)
-    doc.text(label, M + 22, y + 10.5)
-    doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3); doc.line(M, y + 16, W - M, y + 16)
-    y += 16
+    const bg = idx % 2 === 0 ? 248 : 241
+    doc.setFillColor(bg, bg, bg); doc.rect(M, y, CW, 10, 'F')
+    doc.setDrawColor(0); doc.setLineWidth(0.6); doc.rect(M + 4, y + 2.5, 5, 5)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(20, 20, 20)
+    doc.text(label, M + 14, y + 7)
+    doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2); doc.line(M, y + 10, W - M, y + 10)
+    y += 10
   })
   y += 8
 

@@ -51,7 +51,7 @@ Ante cualquier consulta no dude en comunicarse.
 
 THEIA Diseño & Construcción`
     )
-    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank')
+    window.open(`https://mail.google.com/mail/?view=cm&authuser=theiadesignandco%40gmail.com&su=${subject}&body=${body}`, '_blank')
   }
 
   // ── Confirmar y guardar en la app

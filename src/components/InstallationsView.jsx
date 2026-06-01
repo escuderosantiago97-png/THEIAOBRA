@@ -3,15 +3,17 @@ import { sb } from '../supabase'
 import { F, SL } from '../constants'
 import { fD, pdfName } from '../utils'
 import { dI } from '../mappers'
-import { savePDF, buildCPDF, buildRMIntPDF, buildLDPDF } from '../pdf'
+import { savePDF, buildCPDF, buildRMIntPDF, buildGarantiaPDF } from '../pdf'
 import { Card, Badge, Btn, Field, Textarea, ST, Modal } from './ui'
 import OrdenesModal from './OrdenesModal'
+import { usePDFPreview } from '../usePDFPreview.jsx'
 
 export default function InstallationsView({ data, setData, userId, toast }) {
   const [sel, setSel]             = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
   const [ordenesInst, setOrdenesInst] = useState(null)
+  const { previewEl, openPreview } = usePDFPreview()
 
   const del = async (id) => {
     try {
@@ -185,14 +187,14 @@ export default function InstallationsView({ data, setData, userId, toast }) {
                 const r = new FileReader(); r.onload = ev => upd(inst.id, { conformidadUploaded: true, conformidadPhoto: ev.target.result }); r.readAsDataURL(f)
               }} style={{ display: 'none' }} />
               {inst.conformidadUploaded && (
-                <>
-                  <div style={{ background: '#22C55E10', border: '1px solid #22C55E30', borderRadius: '10px', padding: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ color: '#22C55E', fontSize: '18px' }}>✓</span>
-                    <span style={{ color: '#22C55E', fontSize: '13px', fontFamily: F, fontWeight: 600 }}>Conformidad subida</span>
-                  </div>
-                  <Btn onClick={() => savePDF(() => buildLDPDF(inst, sale), pdfName('LibreDeudas', inst.id, inst.client))} variant="purple">📜 Generar Libre de Deudas</Btn>
-                </>
+                <div style={{ background: '#22C55E10', border: '1px solid #22C55E30', borderRadius: '10px', padding: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ color: '#22C55E', fontSize: '18px' }}>✓</span>
+                  <span style={{ color: '#22C55E', fontSize: '13px', fontFamily: F, fontWeight: 600 }}>Conformidad subida</span>
+                </div>
               )}
+              <Btn onClick={() => openPreview(() => buildGarantiaPDF(inst, data.sales.find(s => s.id === inst.saleId)), `Garantia_${inst.id}_${inst.client}.pdf`)} variant="purple">
+                🛡️ Garantía 10 años
+              </Btn>
               {inst.conformidadPhoto?.startsWith('data:image') && <img src={inst.conformidadPhoto} alt="" style={{ width: '100%', borderRadius: '10px', border: '1px solid #1A1A1A' }} />}
             </div>
           </Card>
@@ -205,6 +207,7 @@ export default function InstallationsView({ data, setData, userId, toast }) {
             onClose={() => setOrdenesInst(null)}
           />
         )}
+        {previewEl}
       </div>
     )
   }

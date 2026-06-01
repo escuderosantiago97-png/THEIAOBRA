@@ -617,6 +617,129 @@ export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checkli
   return doc.output('blob')
 }
 
+// ── GARANTÍA 10 AÑOS PDF ─────────────────────────────────────────────────────
+export const buildGarantiaPDF = async (inst, sale) => {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' }); const W = 210, M = 16, CW = W - M * 2
+
+  // ── Header
+  doc.setDrawColor(0); doc.setLineWidth(0.8); doc.line(M, 14, W - M, 14)
+  addLogo(doc, M, 16, 52)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0)
+  doc.text('CERTIFICADO DE GARANTÍA', W - M, 22, { align: 'right' })
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 80, 80)
+  doc.text('10 años · THEIA Design and Co', W - M, 29, { align: 'right' })
+  doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 34, W - M, 34)
+  let y = 40
+
+  // ── Ref boxes
+  const col1 = M, col2 = M + 65, col3 = M + 130, refH = 10
+  doc.setDrawColor(160, 160, 160); doc.setLineWidth(0.3)
+  doc.rect(col1, y, 60, refH); doc.rect(col2, y, 62, refH); doc.rect(col3, y, CW - (col3 - M), refH)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(100, 100, 100)
+  doc.text('INSTALACIÓN N°', col1 + 3, y + 4); doc.text('CLIENTE', col2 + 3, y + 4); doc.text('FECHA', col3 + 3, y + 4)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(0, 0, 0)
+  doc.text(inst?.id || '-', col1 + 3, y + 9)
+  doc.text((inst?.client || '-').substring(0, 22), col2 + 3, y + 9)
+  doc.text(fD(tod()), col3 + 3, y + 9)
+  y += refH
+  doc.rect(col1, y, 60, refH); doc.rect(col2, y, CW - 65, refH)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(100, 100, 100)
+  doc.text('TÉCNICO', col1 + 3, y + 4); doc.text('DIRECCIÓN DE OBRA', col2 + 3, y + 4)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(0, 0, 0)
+  doc.text(inst?.technicianName || '-', col1 + 3, y + 9)
+  doc.text((inst?.address || '-').substring(0, 40), col2 + 3, y + 9)
+  y += refH + 6
+
+  // ── Título de garantía
+  doc.setFillColor(20, 20, 20); doc.rect(M, y, CW, 12, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(255, 255, 255)
+  doc.text('GARANTÍA DE 10 AÑOS', W / 2, y + 8.5, { align: 'center' }); y += 16
+
+  // ── Texto introductorio
+  const intro = `THEIA Design and Co garantiza al cliente ${inst?.client || '_______________'} que los materiales instalados y la mano de obra ejecutada en el inmueble ubicado en ${inst?.address || '_______________'} cuentan con una garantía de DIEZ (10) AÑOS a partir de la fecha de instalación, sujeta a las condiciones y cláusulas detalladas a continuación.`
+  const introLines = doc.splitTextToSize(intro, CW - 8)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(20, 20, 20)
+  doc.text(introLines, M + 4, y, { maxWidth: CW - 8 }); y += introLines.length * 5.8 + 10
+
+  // ── Cláusulas
+  const clausulas = [
+    {
+      titulo: 'CLÁUSULA 1 — COBERTURA',
+      texto: 'La presente garantía cubre defectos de fabricación y/o instalación de los materiales colocados por THEIA Design and Co, incluyendo: deck WPC, wall panels, revestimientos, perfiles, grampas y demás componentes instalados conforme a la orden de trabajo correspondiente.'
+    },
+    {
+      titulo: 'CLÁUSULA 2 — VIGENCIA',
+      texto: 'La garantía tiene una duración de DIEZ (10) años contados a partir de la fecha de instalación indicada en el conforme de obra firmado por ambas partes. Vencido dicho plazo, la garantía queda automáticamente extinguida sin necesidad de notificación.'
+    },
+    {
+      titulo: 'CLÁUSULA 3 — CONDICIONES DE VALIDEZ',
+      texto: 'La garantía es válida siempre que: (a) el cliente haya respetado las instrucciones de mantenimiento provistas por THEIA Design and Co; (b) los materiales no hayan sido objeto de modificaciones, reparaciones o intervenciones realizadas por terceros sin autorización escrita de THEIA Design and Co; (c) el pago total del servicio haya sido efectuado conforme a lo acordado.'
+    },
+    {
+      titulo: 'CLÁUSULA 4 — EXCLUSIONES',
+      texto: 'Quedan expresamente excluidos de esta garantía: (a) daños causados por uso inadecuado, negligencia, accidentes o fuerza mayor (inundaciones, terremotos, incendios, etc.); (b) desgaste normal por el paso del tiempo y uso habitual; (c) daños ocasionados por objetos cortantes, productos químicos agresivos o limpieza con elementos abrasivos; (d) deterioro por falta de mantenimiento preventivo; (e) daños causados por terceros ajenos a THEIA Design and Co.'
+    },
+    {
+      titulo: 'CLÁUSULA 5 — PROCEDIMIENTO DE RECLAMO',
+      texto: 'Para hacer efectiva la garantía, el cliente debe: (1) comunicar el defecto dentro de los treinta (30) días corridos de detectado, mediante correo electrónico a theiadesignandco@gmail.com; (2) indicar el número de instalación, descripción del defecto y adjuntar fotografías del problema; (3) permitir el acceso al inmueble para la inspección técnica por parte de THEIA Design and Co dentro de los quince (15) días hábiles de recibido el reclamo.'
+    },
+    {
+      titulo: 'CLÁUSULA 6 — ALCANCE DE LA REPARACIÓN',
+      texto: 'En caso de que el defecto esté cubierto por esta garantía, THEIA Design and Co procederá, a su exclusivo criterio, a: (a) reparar el material defectuoso; o (b) reemplazar el material afectado por uno de iguales o superiores características, sin cargo para el cliente. El alcance de la reparación se limita a la zona afectada, sin incluir modificaciones en áreas no comprometidas.'
+    },
+    {
+      titulo: 'CLÁUSULA 7 — MANTENIMIENTO RECOMENDADO',
+      texto: 'Para mantener la garantía vigente, se recomienda: limpieza periódica con agua y jabón neutro; evitar el contacto prolongado con agua estancada; inspección anual de fijaciones y perfiles; no aplicar pinturas, barnices ni productos no recomendados por el fabricante. THEIA Design and Co podrá solicitar evidencia del mantenimiento realizado como condición para la aplicación de la garantía.'
+    },
+    {
+      titulo: 'CLÁUSULA 8 — LIMITACIÓN DE RESPONSABILIDAD',
+      texto: 'La responsabilidad de THEIA Design and Co bajo esta garantía se limita estrictamente a la reparación o reposición del material defectuoso. En ningún caso THEIA Design and Co será responsable por daños indirectos, lucro cesante, perjuicios consecuentes o daños a terceros derivados del defecto cubierto. Esta garantía no reemplaza ni modifica los derechos del consumidor establecidos por la legislación argentina vigente.'
+    },
+  ]
+
+  clausulas.forEach((cl, idx) => {
+    const bodyLines = doc.splitTextToSize(cl.texto, CW - 8)
+    const blockH = 7 + bodyLines.length * 5 + 8
+    if (y + blockH > 278) { doc.addPage(); y = M }
+
+    // Header cláusula
+    doc.setFillColor(idx % 2 === 0 ? 240 : 232, idx % 2 === 0 ? 240 : 232, idx % 2 === 0 ? 240 : 232)
+    doc.rect(M, y, CW, 7, 'F')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(20, 20, 20)
+    doc.text(cl.titulo, M + 4, y + 5)
+
+    // Body
+    doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3); doc.rect(M, y + 7, CW, bodyLines.length * 5 + 8)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(30, 30, 30)
+    doc.text(bodyLines, M + 4, y + 13, { maxWidth: CW - 8 })
+    y += blockH + 3
+  })
+
+  // ── Firmas
+  if (y + 40 > 278) { doc.addPage(); y = M }
+  y += 8
+  doc.setDrawColor(0); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6
+  const legal2 = 'La emisión del presente certificado implica la aceptación de todas las cláusulas precedentes por parte del cliente. Este documento tiene validez legal como constancia de garantía de obra.'
+  const ll2 = doc.splitTextToSize(legal2, CW)
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(80, 80, 80)
+  doc.text(ll2, M, y); y += ll2.length * 5 + 14
+
+  const fw = 75
+  doc.setDrawColor(0); doc.setLineWidth(0.5)
+  doc.line(M, y, M + fw, y); doc.line(W - M - fw, y, W - M, y); y += 5
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(80, 80, 80)
+  doc.text('FIRMA CLIENTE / RESPONSABLE', M, y); doc.text('THEIA DESIGN AND CO', W - M - fw, y)
+
+  // Footer en todas las páginas
+  const pp = doc.internal.getNumberOfPages()
+  for (let p = 1; p <= pp; p++) {
+    doc.setPage(p); doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 283, W - M, 283)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(130, 130, 130)
+    doc.text(`THEIA Design and Co · Certificado de Garantía 10 años · ${inst?.id || ''} · Pág. ${p}/${pp}`, W / 2, 289, { align: 'center' })
+  }
+  return doc.output('blob')
+}
+
 // ── INFORME SEMANAL PDF ───────────────────────────────────────────────────────
 export const buildWeeklyPDF = async (data) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' }); const W = 210, M = 16, CW = W - M * 2

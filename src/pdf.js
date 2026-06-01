@@ -541,19 +541,23 @@ export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checkli
   doc.text((inst?.address || '-').substring(0, 40), col2 + 3, y + 9)
   y += refH + 6
 
-  // Formal text — 12pt, centrado en la hoja, sin overflow
+  // ── TEXTO FORMAL — izquierda, en recuadro (zona verde)
   const fechaD = fechaFin ? new Date(fechaFin + 'T12:00:00') : new Date()
   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
   const dia = fechaD.getDate()
   const texto = `Por medio de la presente, el/la cliente ${clienteNombre || inst?.client || '_____________'}, DNI ${clienteDni || '____________'}, presta su conformidad con los trabajos realizados a los ${dia} ${dia === 1 ? 'día' : 'días'} del mes de ${meses[fechaD.getMonth()]} del año ${fechaD.getFullYear()}, en el inmueble ubicado en ${inst?.address || '________________'}, llevados a cabo por THEIA Design and Co. Declara haber inspeccionado y verificado los trabajos, encontrándolos conformes a lo acordado.`
-  const maxTW = CW - 2
-  const tLines = doc.splitTextToSize(texto, maxTW)
+  const textMaxW = CW - 10
+  const tLines = doc.splitTextToSize(texto, textMaxW)
+  const textBoxH = tLines.length * 7 + 14
+  doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.4); doc.rect(M, y, CW, textBoxH)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(12); doc.setTextColor(20, 20, 20)
-  doc.text(tLines, W / 2, y, { align: 'center', maxWidth: maxTW })
-  y += tLines.length * 6.8 + 18
+  doc.text(tLines, M + 5, y + 10, { maxWidth: textMaxW })
+  y += textBoxH + 18  // espacio entre texto y checklist (zona roja más abajo)
 
-  // Checklist — 4 ítems
-  const checkItems = ['MATERIAL EN OBRA','COLOCACION Y TERMINACIONES','LIMPIEZA EN OBRA','CAMBIOS O ADICIONALES']
+  // ── CHECKLIST — zona roja
+  const checkItems = ['MATERIAL EN OBRA', 'COLOCACION Y TERMINACIONES', 'LIMPIEZA EN OBRA', 'CAMBIOS O ADICIONALES']
+  const checkH = 7 + checkItems.length * 10 + 4
+  doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.4); doc.rect(M, y, CW, checkH)
   doc.setFillColor(30, 30, 30); doc.rect(M, y, CW, 7, 'F')
   doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255)
   doc.text('VERIFICACIÓN DE TRABAJO REALIZADO', W / 2, y + 4.8, { align: 'center' }); y += 7
@@ -567,7 +571,7 @@ export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checkli
     doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2); doc.line(M, y + 10, W - M, y + 10)
     y += 10
   })
-  y += 10
+  y += 4 + 12  // cierre del rect + espacio
 
   // Observations
   if (obsFinales) {
@@ -578,30 +582,26 @@ export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checkli
     doc.text(obsLines, M, y); y += obsLines.length * 5 + 8
   }
 
-  // Saldo
   if (saldoAbonado) {
     doc.setDrawColor(0); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(0, 0, 0)
     doc.text('Saldo abonado en conformidad:', M, y); doc.text(saldoAbonado, W - M, y, { align: 'right' }); y += 12
   }
 
-  // Legal — empujado al fondo de la hoja
+  // Legal + firmas fijas al pie
   const legal = 'De esta manera se expresa que, a la firma del presente documento, el cliente ha revisado todos los detalles del trabajo realizado y/o de los productos instalados, prestando su total conformidad con los mismos.'
   const ll = doc.splitTextToSize(legal, CW)
-  const legalH = ll.length * 5
-
-  // Firmas fijas en y = 248
-  const sigY = Math.max(y + legalH + 10, 248)
+  const sigY = 248  // posición fija firmas
 
   doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(50, 50, 50)
-  doc.text(ll, M, sigY - legalH - 10)
+  doc.text(ll, M, sigY - ll.length * 5 - 14)
 
-  // Signatures
   const fw = 75
   doc.setDrawColor(0); doc.setLineWidth(0.5)
   doc.line(M, sigY, M + fw, sigY); doc.line(W - M - fw, sigY, W - M, sigY)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(80, 80, 80)
-  doc.text('FIRMA CLIENTE / RESPONSABLE', M, sigY + 5); doc.text('THEIA DESIGN AND CO', W - M - fw, sigY + 5)
+  doc.text('FIRMA CLIENTE / RESPONSABLE', M, sigY + 5)
+  doc.text('THEIA DESIGN AND CO', W - M - fw, sigY + 5)
   doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3); doc.line(M, sigY + 12, M + fw, sigY + 12)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(130, 130, 130)
   doc.text('Aclaración', M, sigY + 16); doc.text('DNI', M + fw / 2, sigY + 16)

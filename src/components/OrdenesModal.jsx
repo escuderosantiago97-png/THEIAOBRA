@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { F } from '../constants'
 import { fD, tod, $, pdfName } from '../utils'
-import { savePDF, buildOTPDF, buildICPDF, buildCAOPDF } from '../pdf'
+import { buildOTPDF, buildICPDF, buildCAOPDF } from '../pdf'
 import { Modal, Btn } from './ui'
+import { usePDFPreview } from '../usePDFPreview.jsx'
 
 const DEFAULT_CHECKLIST = [
   { label: 'Material en obra', checked: false },
@@ -35,6 +36,7 @@ function TXA({ label, value, onChange, rows = 4, placeholder = '' }) {
 
 export default function OrdenesModal({ inst, sale, onClose }) {
   const [tab, setTab] = useState('ot')
+  const { previewEl, openPreview } = usePDFPreview()
 
   // ── OT state ──────────────────────────────────────────────────────────────────
   const [ot, setOT] = useState({
@@ -91,6 +93,7 @@ export default function OrdenesModal({ inst, sale, onClose }) {
   ]
 
   return (
+    <>
     <Modal title={`Documentación — ${inst.client}`} onClose={onClose} width={860}>
       {/* TABS */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', borderBottom: '1px solid #1A1A1A', paddingBottom: '16px' }}>
@@ -180,8 +183,8 @@ export default function OrdenesModal({ inst, sale, onClose }) {
           <TXA label="Detalle de Tareas a Realizar" value={ot.tareas} onChange={v => setF('tareas', v)} rows={8}
             placeholder="Descripción detallada de los trabajos..." />
 
-          <Btn onClick={() => savePDF(() => buildOTPDF({ ...ot, total }), `OT_${ot.cotizNum || inst.id}_${inst.client}.pdf`)}>
-            📄 Generar Orden de Trabajo PDF
+          <Btn onClick={() => openPreview(() => buildOTPDF({ ...ot, total }), `OT_${ot.cotizNum || inst.id}_${inst.client}.pdf`)}>
+            👁 Vista previa — Orden de Trabajo
           </Btn>
         </div>
       )}
@@ -200,8 +203,8 @@ export default function OrdenesModal({ inst, sale, onClose }) {
             placeholder="Describir qué cambió respecto a la orden original: materiales, dimensiones, tareas adicionales..." />
           <TXA label="Motivo / Justificación" value={ic.motivo} onChange={v => setIF('motivo', v)} rows={4}
             placeholder="Por qué se realizaron estos cambios, quién los solicitó, condiciones de obra que lo motivaron..." />
-          <Btn onClick={() => savePDF(() => buildICPDF({ ...ic, inst }), `InformeCC_${inst.id}_${inst.client}.pdf`)}>
-            📄 Generar Informe de Cambios PDF
+          <Btn onClick={() => openPreview(() => buildICPDF({ ...ic, inst }), `InformeCC_${inst.id}_${inst.client}.pdf`)}>
+            👁 Vista previa — Informe de Cambios
           </Btn>
         </div>
       )}
@@ -239,11 +242,13 @@ export default function OrdenesModal({ inst, sale, onClose }) {
             placeholder="Pendientes, notas o aclaraciones finales..." />
           <FLD label="Saldo abonado en conformidad" value={cao.saldoAbonado} onChange={v => setCF('saldoAbonado', v)} placeholder="$0,00" />
 
-          <Btn onClick={() => savePDF(() => buildCAOPDF({ ...cao, inst, sale }), `ConformeObra_${inst.id}_${inst.client}.pdf`)}>
-            📄 Generar Conforme a Obra PDF
+          <Btn onClick={() => openPreview(() => buildCAOPDF({ ...cao, inst, sale }), `ConformeObra_${inst.id}_${inst.client}.pdf`)}>
+            👁 Vista previa — Conforme a Obra
           </Btn>
         </div>
       )}
     </Modal>
+    {previewEl}
+    </>
   )
 }

@@ -289,6 +289,328 @@ export const buildLDPDF = async (inst, sale) => {
   return doc.output('blob')
 }
 
+// ── ORDEN DE TRABAJO PDF ─────────────────────────────────────────────────────
+export const buildOTPDF = async (data) => {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const W = 210, M = 14, CW = W - M * 2, MID = M + CW / 2
+  let y = M
+
+  // ── HEADER BOX ──
+  doc.setDrawColor(0); doc.setLineWidth(0.4); doc.rect(M, y, CW, 10)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0)
+  doc.text('COTIZACIÓN N°:', M + 3, y + 6.5)
+  doc.setFont('helvetica', 'normal'); doc.text(data.cotizNum || '-', M + 33, y + 6.5)
+  doc.setFont('helvetica', 'bold'); doc.text('FECHA:', W - M - 42, y + 6.5)
+  doc.setFont('helvetica', 'normal'); doc.text(fD(data.fecha || tod()), W - M - 26, y + 6.5)
+  y += 10
+
+  // ── TITLE BAR ──
+  doc.setFillColor(25, 25, 25); doc.rect(M, y, CW, 8, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 255, 255)
+  doc.text('ORDEN DE TRABAJO', W / 2, y + 5.5, { align: 'center' })
+  y += 8
+
+  // ── INFO SECTION ──
+  const logoW = 38, infoW = CW - logoW, fH = 7
+  const infoRows = 5, infoH = fH * infoRows
+  doc.setDrawColor(0); doc.setLineWidth(0.3)
+  doc.rect(M, y, logoW, infoH); doc.rect(M + logoW, y, infoW, infoH)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(0, 0, 0)
+  doc.text('THEIA', M + 5, y + 13)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5); doc.setTextColor(80, 80, 80)
+  doc.text('DISEÑO &', M + 5, y + 18); doc.text('CONSTRUCCIÓN', M + 5, y + 22)
+
+  const fX = M + logoW + 3, fX2 = M + logoW + infoW / 2 + 3
+  const vX = M + logoW + 28, vX2 = M + logoW + infoW / 2 + 30
+  const row = (i) => y + i * fH
+
+  const infoField = (label, value, x, vx, rowIdx) => {
+    doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.2)
+    if (rowIdx > 0) doc.line(M + logoW, row(rowIdx), W - M, row(rowIdx))
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(100, 100, 100)
+    doc.text(label, x, row(rowIdx) + 3.5)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(0, 0, 0)
+    doc.text(String(value || '-'), vx, row(rowIdx) + 6)
+  }
+
+  infoField('FECHA DE INICIO', fD(data.fechaInicio || tod()), fX, vX, 0)
+  infoField('INSTALADOR:', data.instalador, fX2, vX2, 0)
+  doc.setDrawColor(210, 210, 210); doc.line(M + logoW, row(1), W - M, row(1))
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(100, 100, 100); doc.text('UBICACIÓN:', fX, row(1) + 3.5)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0); doc.text(data.ubicacion || '-', vX, row(1) + 6, { maxWidth: infoW - 30 })
+  infoField('BARRIO:', data.barrio, fX, vX, 2)
+  infoField('LOTE N°:', data.lote, fX2, vX2, 2)
+  infoField('ALTURA:', data.altura, fX, vX, 3)
+  // Checkboxes
+  doc.setDrawColor(210, 210, 210); doc.line(M + logoW, row(3), W - M, row(3))
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(100, 100, 100)
+  doc.text('INTERIOR:', fX2, row(3) + 3.5)
+  doc.setDrawColor(0); doc.setLineWidth(0.5); doc.rect(fX2 + 15, row(3) + 1, 4.5, 4.5)
+  if (data.interior) { doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(0,0,0); doc.text('×', fX2 + 16, row(3) + 5.2) }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(100, 100, 100)
+  doc.text('EXTERIOR:', fX2 + 26, row(3) + 3.5)
+  doc.rect(fX2 + 41, row(3) + 1, 4.5, 4.5)
+  if (data.exterior) { doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(0,0,0); doc.text('×', fX2 + 42, row(3) + 5.2) }
+  infoField('RESP. DE OBRA:', data.respObra, fX, vX, 4)
+  infoField('TELÉFONO:', data.telefono, fX2, vX2, 4)
+  y += infoH
+
+  // ── MATERIALS SPLIT HEADER ──
+  doc.setFillColor(60, 60, 60); doc.rect(M, y, CW / 2, 7, 'F')
+  doc.setFillColor(90, 90, 90); doc.rect(MID, y, CW / 2, 7, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255)
+  doc.text('MATERIALES', M + CW / 4, y + 4.8, { align: 'center' })
+  doc.text('IMPORTES', MID + CW / 4, y + 4.8, { align: 'center' })
+  y += 7
+
+  // Sub-headers
+  doc.setFillColor(220, 220, 220); doc.rect(M, y, CW / 2, 6, 'F')
+  doc.setFillColor(230, 230, 230); doc.rect(MID, y, CW / 2, 6, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(60, 60, 60)
+  const Lh = [[' DETALLE', M + 1], ['COLOR', M + 50], ['UNI.', M + 67], ['CANT.', M + 77]]
+  const Rh = [['MATERIAL', MID + 1], ['UNI.', MID + 38], ['CANT.', MID + 50], ['IMPORTE', W - M - 2]]
+  Lh.forEach(([l, x]) => doc.text(l, x, y + 4.2))
+  Rh.forEach(([l, x], i) => doc.text(l, x, y + 4.2, { align: i === 3 ? 'right' : 'left' }))
+  y += 6
+
+  // Rows (minimum 8)
+  const mats = data.materiales || []; const minRows = Math.max(mats.length, 8); const rH = 7
+  for (let i = 0; i < minRows; i++) {
+    const m = mats[i]
+    const bg = i % 2 === 0 ? 252 : 245
+    doc.setFillColor(bg, bg, bg); doc.rect(M, y, CW, rH, 'F')
+    doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2)
+    doc.line(MID, y, MID, y + rH); doc.line(M, y + rH, W - M, y + rH)
+    if (m) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(20, 20, 20)
+      if (m.detalle) doc.text(m.detalle, M + 2, y + 4.8, { maxWidth: 44 })
+      if (m.color) doc.text(m.color, M + 50, y + 4.8, { maxWidth: 14 })
+      if (m.uni) doc.text(m.uni, M + 67, y + 4.8)
+      if (m.cant) doc.text(String(m.cant), M + 80, y + 4.8, { align: 'right' })
+      if (m.material) doc.text(m.material, MID + 2, y + 4.8, { maxWidth: 34 })
+      if (m.uni2) doc.text(m.uni2, MID + 38, y + 4.8)
+      if (m.cant2) doc.text(String(m.cant2), MID + 52, y + 4.8)
+      if (m.importe) { doc.setFont('helvetica', 'bold'); doc.text(m.importe, W - M - 2, y + 4.8, { align: 'right' }) }
+    }
+    y += rH
+  }
+
+  // Total
+  doc.setFillColor(238, 238, 238); doc.rect(M, y, CW, 8, 'F')
+  doc.setDrawColor(0); doc.setLineWidth(0.4); doc.rect(M, y, CW, 8)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0)
+  doc.text('TOTAL', MID + 2, y + 5.5)
+  const totalFmt = (data.total || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
+  doc.text(totalFmt, W - M - 2, y + 5.5, { align: 'right' })
+  y += 12
+
+  // ── CONDICIONES COMERCIALES ──
+  const section = (title, text, minH = 20) => {
+    if (y + 16 > 272) { doc.addPage(); y = M }
+    doc.setFillColor(50, 50, 50); doc.rect(M, y, CW, 7, 'F')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255)
+    doc.text(title, W / 2, y + 4.8, { align: 'center' }); y += 7
+    const lines = doc.splitTextToSize(text || '', CW - 6)
+    const h = Math.max(lines.length * 5 + 10, minH)
+    if (y + h > 278) { doc.addPage(); y = M }
+    doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3); doc.rect(M, y, CW, h)
+    if (text) { doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(25, 25, 25); doc.text(lines, M + 4, y + 7) }
+    y += h + 6
+  }
+
+  section('CONDICIONES COMERCIALES', data.condComerciales, 18)
+  section('DETALLE DE LAS TAREAS A REALIZAR', data.tareas, 40)
+
+  // ── SIGNATURES ──
+  if (y + 28 > 278) { doc.addPage(); y = M }
+  y += 4
+  if (data.firmaEmpresa) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(30, 30, 30)
+    doc.text(data.firmaEmpresa, M + CW / 4, y, { align: 'center' })
+  }
+  y += 10
+  doc.setDrawColor(0); doc.setLineWidth(0.5)
+  doc.line(M, y, M + CW / 2 - 8, y); doc.line(MID + 8, y, W - M, y); y += 5
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(80, 80, 80)
+  doc.text('FIRMA RESPONSABLE EMPRESA', M, y); doc.text('FIRMA RESPONSABLE INSTALACIÓN', MID + 8, y)
+
+  // Footer
+  const pp = doc.internal.getNumberOfPages()
+  for (let p = 1; p <= pp; p++) {
+    doc.setPage(p); doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 283, W - M, 283)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(130, 130, 130)
+    doc.text(`THEIA Diseño & Construcción · Orden de Trabajo${data.cotizNum ? ' · ' + data.cotizNum : ''} · Pág. ${p}/${pp}`, W / 2, 289, { align: 'center' })
+  }
+  return doc.output('blob')
+}
+
+// ── INFORME DE CAMBIOS PDF ────────────────────────────────────────────────────
+export const buildICPDF = async ({ fecha, descripcion, motivo, solicitadoPor, inst }) => {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' }); const W = 210, M = 16, CW = W - M * 2
+  pH(doc, W, M, 'INFORME DE MODIFICACIONES', inst?.id || '-', fD(fecha || tod())); let y = 42
+
+  // Client ref
+  doc.setFillColor(240, 240, 240); doc.rect(M, y, CW, 16, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(80, 80, 80)
+  doc.text('INSTALACIÓN:', M + 4, y + 6); doc.text('CLIENTE:', M + CW / 2 + 4, y + 6)
+  doc.text('DIRECCIÓN:', M + 4, y + 13)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(0, 0, 0)
+  doc.text(inst?.id || '-', M + 28, y + 6)
+  doc.text(inst?.client || '-', M + CW / 2 + 20, y + 6)
+  doc.text(inst?.address || '-', M + 28, y + 13, { maxWidth: CW / 2 - 30 }); y += 22
+
+  // Meta row
+  const half = (CW - 4) / 2
+  doc.setDrawColor(160, 160, 160); doc.setLineWidth(0.3)
+  doc.rect(M, y, half, 10); doc.rect(M + half + 4, y, half, 10)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(100, 100, 100)
+  doc.text('FECHA DEL INFORME', M + 3, y + 4); doc.text('SOLICITADO / NOTIFICADO POR', M + half + 7, y + 4)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(0, 0, 0)
+  doc.text(fD(fecha || tod()), M + 3, y + 9); doc.text(solicitadoPor || '-', M + half + 7, y + 9); y += 16
+
+  const blk = (title, text, rgb) => {
+    doc.setFillColor(...rgb); doc.rect(M, y, CW, 7, 'F')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255)
+    doc.text(title, W / 2, y + 4.8, { align: 'center' }); y += 7
+    const lines = doc.splitTextToSize(text || '—', CW - 6)
+    const h = Math.max(lines.length * 5 + 10, 28)
+    if (y + h > 278) { doc.addPage(); y = 16 }
+    doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3); doc.rect(M, y, CW, h)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(25, 25, 25)
+    doc.text(lines, M + 4, y + 7); y += h + 8
+  }
+  blk('DESCRIPCIÓN DE LA MODIFICACIÓN / CAMBIO', descripcion, [60, 100, 200])
+  blk('MOTIVO / JUSTIFICACIÓN', motivo, [70, 70, 70])
+
+  // Legal
+  const legal = 'El presente informe documenta las modificaciones realizadas sobre la orden de trabajo original. Ambas partes quedan notificadas de los cambios detallados y prestan conformidad mediante la firma al pie.'
+  const ll = doc.splitTextToSize(legal, CW)
+  if (y + ll.length * 5 + 30 > 278) { doc.addPage(); y = 16 }
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(80, 80, 80)
+  doc.text(ll, M, y); y += ll.length * 5 + 14
+
+  // Signatures
+  const fw = 75
+  doc.setDrawColor(0); doc.setLineWidth(0.5)
+  doc.line(M, y, M + fw, y); doc.line(W - M - fw, y, W - M, y); y += 5
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(80, 80, 80)
+  doc.text('RESPONSABLE EMPRESA', M, y); doc.text('CLIENTE / RESPONSABLE', W - M - fw, y)
+
+  doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 283, W - M, 283)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(130, 130, 130)
+  doc.text(`THEIA Diseño & Construcción · Informe de Modificaciones · ${inst?.id || ''} · ${fD(fecha || tod())}`, W / 2, 289, { align: 'center' })
+  return doc.output('blob')
+}
+
+// ── CONFORME A OBRA PDF ───────────────────────────────────────────────────────
+export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checklistItems, obsFinales, saldoAbonado, inst, sale }) => {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' }); const W = 210, M = 16, CW = W - M * 2
+
+  // Header
+  doc.setDrawColor(0); doc.setLineWidth(1); doc.line(M, 14, W - M, 14)
+  doc.setFillColor(20, 20, 20); doc.rect(M, 17, 38, 14, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255); doc.text('THEIA', M + 4, 26)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(200, 200, 200); doc.text('DISEÑO & CONSTRUCCIÓN', M + 4, 30)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0); doc.text('CONFORME A OBRA', W - M, 24, { align: 'right' })
+  doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 33, W - M, 33)
+  let y = 38
+
+  // Reference boxes
+  const col1 = M, col2 = M + 65, col3 = M + 130, refH = 10
+  doc.setDrawColor(160, 160, 160); doc.setLineWidth(0.3)
+  doc.rect(col1, y, 60, refH); doc.rect(col2, y, 62, refH); doc.rect(col3, y, CW - (col3 - M), refH)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(100, 100, 100)
+  doc.text('INSTALACIÓN N°', col1 + 3, y + 4); doc.text('CLIENTE', col2 + 3, y + 4); doc.text('FECHA', col3 + 3, y + 4)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(0, 0, 0)
+  doc.text(inst?.id || '-', col1 + 3, y + 9)
+  doc.text((clienteNombre || inst?.client || '-').substring(0, 22), col2 + 3, y + 9)
+  doc.text(fD(fechaFin || tod()), col3 + 3, y + 9)
+  y += refH
+  doc.rect(col1, y, 60, refH); doc.rect(col2, y, CW - 65, refH)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(100, 100, 100)
+  doc.text('DNI / DOCUMENTO', col1 + 3, y + 4); doc.text('DIRECCIÓN DE OBRA', col2 + 3, y + 4)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(0, 0, 0)
+  doc.text(clienteDni || '—', col1 + 3, y + 9)
+  doc.text((inst?.address || '-').substring(0, 40), col2 + 3, y + 9)
+  y += refH + 6
+
+  // Formal text
+  const fechaD = fechaFin ? new Date(fechaFin + 'T12:00:00') : new Date()
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+  const texto = `Por medio de la presente, el/la cliente ${clienteNombre || inst?.client || '_____________'}, DNI ${clienteDni || '____________'}, presta su conformidad con los trabajos realizados a los ${fechaD.getDate()} días del mes de ${meses[fechaD.getMonth()]} del año ${fechaD.getFullYear()}, en el inmueble ubicado en ${inst?.address || '________________'}, llevados a cabo por THEIA Diseño & Construcción. Declara haber inspeccionado y verificado los trabajos, encontrándolos conformes a lo acordado.`
+  const tLines = doc.splitTextToSize(texto, CW)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(25, 25, 25)
+  doc.text(tLines, M, y); y += tLines.length * 5 + 10
+
+  // Checklist
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0)
+  doc.text('VERIFICACIÓN DE TRABAJO REALIZADO', M, y); y += 6
+  const items = checklistItems || []; const colW = CW / 2
+  items.forEach((item, idx) => {
+    const cx = idx % 2 === 0 ? M : M + colW
+    const iy = y + Math.floor(idx / 2) * 9
+    if (idx % 2 === 0) {
+      const bg = Math.floor(idx / 2) % 2 === 0 ? 250 : 243
+      doc.setFillColor(bg, bg, bg); doc.rect(M, iy, CW, 9, 'F')
+    }
+    doc.setDrawColor(item.checked ? 30 : 180, item.checked ? 140 : 180, item.checked ? 30 : 180)
+    doc.setLineWidth(0.5); doc.rect(cx + 3, iy + 2.5, 4.5, 4.5)
+    if (item.checked) {
+      doc.setFillColor(30, 140, 30); doc.rect(cx + 3, iy + 2.5, 4.5, 4.5, 'F')
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255)
+      doc.text('✓', cx + 4, iy + 6.5)
+    }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(item.checked ? 20 : 80, item.checked ? 80 : 80, 20)
+    doc.text(item.label, cx + 11, iy + 6.5)
+  })
+  y += Math.ceil(items.length / 2) * 9 + 8
+
+  // Observations
+  if (obsFinales) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(80, 80, 80)
+    doc.text('OBSERVACIONES FINALES', M, y); y += 5
+    const obsLines = doc.splitTextToSize(obsFinales, CW)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(30, 30, 30)
+    doc.text(obsLines, M, y); y += obsLines.length * 5 + 8
+  }
+
+  // Saldo
+  if (saldoAbonado) {
+    if (y + 14 > 265) { doc.addPage(); y = 20 }
+    doc.setDrawColor(0); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(0, 0, 0)
+    doc.text('Saldo abonado en conformidad:', M, y); doc.text(saldoAbonado, W - M, y, { align: 'right' }); y += 10
+  }
+
+  // Legal
+  if (y + 30 > 265) { doc.addPage(); y = 20 }
+  const legal = 'De esta manera se expresa que, a la firma del presente documento, el cliente ha revisado todos los detalles del trabajo realizado y/o de los productos instalados, prestando su total conformidad con los mismos.'
+  const ll = doc.splitTextToSize(legal, CW)
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(50, 50, 50)
+  doc.text(ll, M, y); y += ll.length * 5 + 14
+
+  // Signatures
+  if (y + 24 > 272) { doc.addPage(); y = 20 }
+  const fw = 75
+  doc.setDrawColor(0); doc.setLineWidth(0.5)
+  doc.line(M, y, M + fw, y); doc.line(W - M - fw, y, W - M, y); y += 5
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(80, 80, 80)
+  doc.text('FIRMA CLIENTE / RESPONSABLE', M, y); doc.text('THEIA DISEÑO & CONSTRUCCIÓN', W - M - fw, y); y += 7
+  doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3); doc.line(M, y, M + fw, y)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(130, 130, 130)
+  doc.text('Aclaración', M, y + 4); doc.text('DNI', M + fw / 2, y + 4)
+  if (clienteNombre) { doc.setFontSize(8); doc.setTextColor(30, 30, 30); doc.text(clienteNombre, M, y - 2) }
+  doc.text(inst?.technicianName || 'THEIA', W - M - fw, y - 2)
+
+  const pp = doc.internal.getNumberOfPages()
+  for (let p = 1; p <= pp; p++) {
+    doc.setPage(p); doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 283, W - M, 283)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(130, 130, 130)
+    doc.text(`THEIA Diseño & Construcción · Conforme a Obra · ${inst?.id || ''} · Pág. ${p}/${pp}`, W / 2, 289, { align: 'center' })
+  }
+  return doc.output('blob')
+}
+
 // ── INFORME SEMANAL PDF ───────────────────────────────────────────────────────
 export const buildWeeklyPDF = async (data) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' }); const W = 210, M = 16, CW = W - M * 2

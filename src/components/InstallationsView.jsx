@@ -5,11 +5,13 @@ import { fD, pdfName } from '../utils'
 import { dI } from '../mappers'
 import { savePDF, buildCPDF, buildRMIntPDF, buildLDPDF } from '../pdf'
 import { Card, Badge, Btn, Field, Textarea, ST, Modal } from './ui'
+import OrdenesModal from './OrdenesModal'
 
 export default function InstallationsView({ data, setData, userId, toast }) {
   const [sel, setSel]             = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
+  const [ordenesInst, setOrdenesInst] = useState(null)
 
   const del = async (id) => {
     try {
@@ -66,6 +68,9 @@ export default function InstallationsView({ data, setData, userId, toast }) {
           <h2 style={{ margin: 0, color: '#FFF', fontFamily: F, fontSize: '22px', fontWeight: 800 }}>{inst.client}</h2>
           <Badge status={inst.status} />
           {inst.conformidadUploaded && <span style={{ color: '#22C55E', fontSize: '13px', fontFamily: F, fontWeight: 600 }}>✓ Conformidad</span>}
+          <div style={{ marginLeft: 'auto' }}>
+            <Btn onClick={() => setOrdenesInst(inst)} variant="secondary" size="sm">📋 Órdenes</Btn>
+          </div>
         </div>
 
         {/* Info + stages */}
@@ -192,6 +197,14 @@ export default function InstallationsView({ data, setData, userId, toast }) {
             </div>
           </Card>
         </div>
+
+        {ordenesInst && (
+          <OrdenesModal
+            inst={ordenesInst}
+            sale={data.sales.find(s => s.id === ordenesInst.saleId)}
+            onClose={() => setOrdenesInst(null)}
+          />
+        )}
       </div>
     )
   }

@@ -410,12 +410,17 @@ export const buildOTPDF = async (data) => {
     doc.setFillColor(50, 50, 50); doc.rect(M, y, CW, 7, 'F')
     doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255)
     doc.text(title, W / 2, y + 4.8, { align: 'center' }); y += 7
-    const lines = doc.splitTextToSize(text || '', CW - 6)
-    const h = Math.max(lines.length * 5 + 10, minH)
+    const maxTW = CW - 10
+    const lines = doc.splitTextToSize(text || '', maxTW)
+    const lineH = 4.8
+    const h = Math.max(lines.length * lineH + 10, minH)
     if (y + h > 278) { doc.addPage(); y = M }
-    doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3); doc.rect(M, y, CW, h)
-    if (text) { doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(25, 25, 25); doc.text(lines, M + 4, y + 7) }
-    y += h + 6
+    doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3); doc.rect(M, y, CW, h)
+    if (text) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(20, 20, 20)
+      doc.text(lines, M + 5, y + 7, { maxWidth: maxTW })
+    }
+    y += h + 5
   }
 
   section('CONDICIONES COMERCIALES', data.condComerciales, 18)
@@ -534,36 +539,35 @@ export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checkli
   doc.text((inst?.address || '-').substring(0, 40), col2 + 3, y + 9)
   y += refH + 6
 
-  // Formal text
+  // Formal text — más grande
   const fechaD = fechaFin ? new Date(fechaFin + 'T12:00:00') : new Date()
   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
   const texto = `Por medio de la presente, el/la cliente ${clienteNombre || inst?.client || '_____________'}, DNI ${clienteDni || '____________'}, presta su conformidad con los trabajos realizados a los ${fechaD.getDate()} días del mes de ${meses[fechaD.getMonth()]} del año ${fechaD.getFullYear()}, en el inmueble ubicado en ${inst?.address || '________________'}, llevados a cabo por THEIA Diseño & Construcción. Declara haber inspeccionado y verificado los trabajos, encontrándolos conformes a lo acordado.`
   const tLines = doc.splitTextToSize(texto, CW)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(25, 25, 25)
-  doc.text(tLines, M, y); y += tLines.length * 5 + 10
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(20, 20, 20)
+  doc.text(tLines, M, y); y += tLines.length * 6.2 + 12
 
-  // Checklist
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0)
-  doc.text('VERIFICACIÓN DE TRABAJO REALIZADO', M, y); y += 6
-  const items = checklistItems || []; const colW = CW / 2
-  items.forEach((item, idx) => {
-    const cx = idx % 2 === 0 ? M : M + colW
-    const iy = y + Math.floor(idx / 2) * 9
-    if (idx % 2 === 0) {
-      const bg = Math.floor(idx / 2) % 2 === 0 ? 250 : 243
-      doc.setFillColor(bg, bg, bg); doc.rect(M, iy, CW, 9, 'F')
-    }
-    doc.setDrawColor(item.checked ? 30 : 180, item.checked ? 140 : 180, item.checked ? 30 : 180)
-    doc.setLineWidth(0.5); doc.rect(cx + 3, iy + 2.5, 4.5, 4.5)
-    if (item.checked) {
-      doc.setFillColor(30, 140, 30); doc.rect(cx + 3, iy + 2.5, 4.5, 4.5, 'F')
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255)
-      doc.text('✓', cx + 4, iy + 6.5)
-    }
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(item.checked ? 20 : 80, item.checked ? 80 : 80, 20)
-    doc.text(item.label, cx + 11, iy + 6.5)
+  // Checklist — 4 ítems grandes
+  const checkItems = [
+    'MATERIAL EN OBRA',
+    'COLOCACION Y TERMINACIONES',
+    'LIMPIEZA EN OBRA',
+    'CAMBIOS O ADICIONALES',
+  ]
+  doc.setFillColor(30, 30, 30); doc.rect(M, y, CW, 8, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255)
+  doc.text('VERIFICACIÓN DE TRABAJO REALIZADO', W / 2, y + 5.5, { align: 'center' }); y += 8
+
+  checkItems.forEach((label, idx) => {
+    const bg = idx % 2 === 0 ? 248 : 240
+    doc.setFillColor(bg, bg, bg); doc.rect(M, y, CW, 16, 'F')
+    doc.setDrawColor(0); doc.setLineWidth(0.8); doc.rect(M + 5, y + 3, 10, 10)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20, 20, 20)
+    doc.text(label, M + 22, y + 10.5)
+    doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3); doc.line(M, y + 16, W - M, y + 16)
+    y += 16
   })
-  y += Math.ceil(items.length / 2) * 9 + 8
+  y += 8
 
   // Observations
   if (obsFinales) {

@@ -5,18 +5,10 @@ import { savePDF, buildOTPDF, buildICPDF, buildCAOPDF } from '../pdf'
 import { Modal, Btn } from './ui'
 
 const DEFAULT_CHECKLIST = [
-  { label: 'Nivelación correcta', checked: true },
-  { label: 'Marco perimetral instalado', checked: true },
-  { label: 'Frentín colocado', checked: true },
-  { label: 'Grampas fijadas correctamente', checked: true },
-  { label: 'Manta geotextil colocada', checked: true },
-  { label: 'Pilotines amurados', checked: true },
-  { label: 'Patas de pérgola amuradas', checked: false },
-  { label: 'Limpieza del sector realizada', checked: true },
-  { label: 'Material sobrante retirado', checked: true },
-  { label: 'Alineación de tablas verificada', checked: true },
-  { label: 'Contra conformidad firmada', checked: false },
-  { label: 'Cliente inspeccionó el trabajo', checked: true },
+  { label: 'Material en obra', checked: false },
+  { label: 'Colocación y terminaciones', checked: false },
+  { label: 'Limpieza en obra', checked: false },
+  { label: 'Cambios o adicionales', checked: false },
 ]
 
 const inp = { background: '#0A0A0A', border: '1px solid #222', borderRadius: '8px', padding: '7px 10px', color: '#FFF', fontSize: '12px', fontFamily: F, outline: 'none', width: '100%', boxSizing: 'border-box' }

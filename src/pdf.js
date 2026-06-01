@@ -1,6 +1,13 @@
 import { jsPDF } from 'jspdf'
 import { IVA, ITYPE } from './constants'
 import { $, fD, tod, calc } from './utils'
+import { LOGO } from './logoBase64'
+
+// Helper: agrega el logo en cualquier PDF
+// x, y = esquina superior izquierda, w = ancho en mm (alto se calcula auto 1080x300 ≈ ratio 3.6:1)
+const addLogo = (doc, x, y, w) => {
+  try { doc.addImage(LOGO, 'JPEG', x, y, w, w / 3.6) } catch (_) {}
+}
 
 // ── SAVE WITH NATIVE DIALOG ───────────────────────────────────────────────────
 export const savePDF = async (buildFn, filename) => {
@@ -28,8 +35,7 @@ export const savePDF = async (buildFn, filename) => {
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const pH = (doc, W, M, type, num, date) => {
   doc.setDrawColor(0); doc.setLineWidth(0.8); doc.line(M, 14, W - M, 14)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(0, 0, 0); doc.text('THEIA', M, 22)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(100, 100, 100); doc.text('Diseño & Construcción', M, 27)
+  addLogo(doc, M, 16, 52)   // logo 52mm ancho ≈ 14.4mm alto
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0); doc.text(type, W - M, 20, { align: 'right' })
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(60, 60, 60)
   doc.text(`N° ${num}`, W - M, 26, { align: 'right' }); doc.text(`Fecha: ${date}`, W - M, 31, { align: 'right' })
@@ -295,14 +301,16 @@ export const buildOTPDF = async (data) => {
   const W = 210, M = 14, CW = W - M * 2, MID = M + CW / 2
   let y = M
 
-  // ── HEADER BOX ──
-  doc.setDrawColor(0); doc.setLineWidth(0.4); doc.rect(M, y, CW, 10)
+  // ── HEADER ──
+  doc.setDrawColor(0); doc.setLineWidth(0.8); doc.line(M, y, W - M, y); y += 2
+  addLogo(doc, M, y, 52)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0)
-  doc.text('COTIZACIÓN N°:', M + 3, y + 6.5)
-  doc.setFont('helvetica', 'normal'); doc.text(data.cotizNum || '-', M + 33, y + 6.5)
-  doc.setFont('helvetica', 'bold'); doc.text('FECHA:', W - M - 42, y + 6.5)
-  doc.setFont('helvetica', 'normal'); doc.text(fD(data.fecha || tod()), W - M - 26, y + 6.5)
-  y += 10
+  doc.text('COTIZACIÓN N°:', W - M - 80, y + 4)
+  doc.setFont('helvetica', 'normal'); doc.text(data.cotizNum || '-', W - M - 45, y + 4)
+  doc.text('FECHA:', W - M - 80, y + 10)
+  doc.text(fD(data.fecha || tod()), W - M - 60, y + 10)
+  y += 16
+  doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, y, W - M, y); y += 3
 
   // ── TITLE BAR ──
   doc.setFillColor(25, 25, 25); doc.rect(M, y, CW, 8, 'F')
@@ -507,11 +515,9 @@ export const buildICPDF = async ({ fecha, descripcion, motivo, solicitadoPor, in
 export const buildCAOPDF = async ({ fechaFin, clienteNombre, clienteDni, checklistItems, obsFinales, saldoAbonado, inst, sale }) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' }); const W = 210, M = 16, CW = W - M * 2
 
-  // Header — logo fondo blanco, letra negra
-  doc.setDrawColor(0); doc.setLineWidth(1); doc.line(M, 14, W - M, 14)
-  doc.setDrawColor(0); doc.setLineWidth(0.5); doc.rect(M, 17, 38, 14)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0); doc.text('THEIA', M + 4, 26)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 80, 80); doc.text('DESIGN AND CO', M + 4, 30)
+  // Header — logo imagen
+  doc.setDrawColor(0); doc.setLineWidth(0.8); doc.line(M, 14, W - M, 14)
+  addLogo(doc, M, 16, 52)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0); doc.text('CONFORME A OBRA', W - M, 24, { align: 'right' })
   doc.setDrawColor(0); doc.setLineWidth(0.4); doc.line(M, 33, W - M, 33)
   let y = 38
